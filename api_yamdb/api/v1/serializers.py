@@ -38,7 +38,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if self.initial_data.get('username') == 'me':
             raise serializers.ValidationError(
-                {"username": ["Вы не можете использоват этот username!"]}
+                {"username": ["This username is not awailable"]}
             )
         return data
 
@@ -52,7 +52,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if self.initial_data.get('username') == 'me':
             raise serializers.ValidationError(
-                {"username": ["Вы не можете использоват этот username!"]}
+                {"username": ["This username is not awailable"]}
             )
         return data
 
