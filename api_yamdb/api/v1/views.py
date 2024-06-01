@@ -4,15 +4,17 @@ from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 from api.filters import TitleGenreFilter
 from api.mixins import SlugNameViewSet
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, ReviewSerializer,
-                             TitleGETSerializer, TitleSerializer)
+                             TitleGETSerializer, TitleSerializer,
+                             UserSerializer)
 from api_yamdb.settings import EMAIL_YAMDB
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
@@ -91,6 +93,33 @@ class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """Вьюсет для обьектов модели User."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (IsAdmin, )
+    lookup_field = 'username'
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+    http_method_names = ('get', 'post', 'patch', 'delete')
+
+    @action(
+        detail=False,
+        url_path='me',
+        methods=['GET', 'PATCH'],
+        permission_classes=[IsAuthenticated]
+    )
+    def get_user_selfpage(self, request):
+        if request.method == 'GET':
+            serializer = UserSerializer(request.user)
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK)
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(role=request.user.role, partial=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     pass
 
 
