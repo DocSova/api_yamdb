@@ -1,6 +1,6 @@
 from rest_framework import filters, mixins, viewsets
 from rest_framework.pagination import LimitOffsetPagination
-from permissions import IsAdmin
+from .permissions import IsAdmin
 
 
 class SlugNameViewSet(

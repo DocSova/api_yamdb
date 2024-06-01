@@ -1,34 +1,46 @@
-import uuid
-from django.core.mail import send_mail
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action, api_view
 
-from api.filters import TitleGenreFilter
-from api.mixins import SlugNameViewSet
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, ReviewSerializer,
-                             TitleGETSerializer, TitleSerializer,
-                             UserSerializer)
-from api_yamdb.settings import EMAIL_YAMDB
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
-from users.permissions import IsAdmin, IsAuthorModeratorAdminOrReadOnly
-from .serializers import GetTokenSerializer, SignUpSerializer
+
+from .filters import TitleGenreFilter
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    ReviewSerializer,
+    TitleGETSerializer,
+    TitleSerializer,
+    UserSerializer,
+    GetTokenSerializer,
+    SignUpSerializer
+)
+from .permissions import (
+    ReadOnly,
+    IsAdmin,
+    IsAuthorModeratorAdminOrReadOnly
+)
 from .utils import get_and_send_confirmation_code
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Comment."""
+
     serializer_class = CommentSerializer
     permission_classes = (IsAuthorModeratorAdminOrReadOnly,)
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_review(self):
+        """Возвращает объект текущего отзыва."""
+
         return get_object_or_404(
             Review,
             pk=self.kwargs['review_id'],
@@ -36,54 +48,77 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
+        """Возвращает queryset c комментариями для текущего отзыва."""
+
         return self.get_review().comments.all()
 
     def perform_create(self, serializer):
-        return serializer.save(
-            author=self.request.user, review=self.get_review()
+        """Создает комментарий для текущего отзыва,
+        где автором является текущий пользователь."""
+
+        serializer.save(
+            author=self.request.user,
+            review=self.get_review()
         )
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Review."""
-    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    http_method_names = ('get', 'post', 'patch', 'delete')
     serializer_class = ReviewSerializer
     permission_classes = (IsAuthorModeratorAdminOrReadOnly,)
 
     def get_title(self):
+        """Возвращает объект текущего произведения."""
+
         title_id = self.kwargs.get('title_id')
         return get_object_or_404(Title, pk=title_id)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        """Создает отзыв для текущего произведения,
+        где автором является текущий пользователь."""
+
+        serializer.save(
+            author=self.request.user,
+            title=self.get_title()
+        )
 
     def get_queryset(self):
+        """Возвращает queryset c отзывами для текущего произведения."""
+
         return self.get_title().reviews.all()
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """Вьюсет для создания обьектов класса Category."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
 class GenreViewSet(viewsets.ModelViewSet):
     """Вьюсет для создания обьектов класса Genre."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Вьюсет для создания обьектов класса Title."""
-    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    http_method_names = ('get', 'post', 'patch', 'delete')
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
     ).order_by('name')
     filter_backends = (DjangoFilterBackend, )
     filterset_class = TitleGenreFilter
-    permission_classes = (IsAdmin,)
+    permission_classes = (ReadOnly | IsAdmin,)
 
     def get_serializer_class(self):
+        """Определяет какой сериализатор будет использоваться
+        для разных типов запроса."""
+
         if self.request.method in ('POST', 'PATCH'):
             return TitleSerializer
         return TitleGETSerializer
@@ -93,6 +128,7 @@ class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """Вьюсет для обьектов модели User."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAdmin, )
@@ -108,6 +144,9 @@ class UserViewSet(mixins.ListModelMixin,
         permission_classes=[IsAuthenticated]
     )
     def get_user_selfpage(self, request):
+        """Обеспечивает получание данных пользователя по его username и
+        управление ими."""
+
         if request.method == 'GET':
             serializer = UserSerializer(request.user)
             return Response(
