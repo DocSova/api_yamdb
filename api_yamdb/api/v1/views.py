@@ -1,6 +1,4 @@
 
-import uuid
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, viewsets, status
 from rest_framework.response import Response
@@ -9,9 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (GetTokenSerializer,
                           SignUpSerializer,)
 from users.models import User
-from api_yamdb.settings import EMAIL_YAMDB
-
-
+from .utils import get_and_send_confirmation_code
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Comment."""
@@ -59,17 +55,6 @@ def token(request):
     return Response(
         'Проверьте правильность указанных для получения токена данных.',
         status=status.HTTP_400_BAD_REQUEST
-    )
-
-
-def get_and_send_confirmation_code(user):
-    user.update(confirmation_code=str(uuid.uuid4()).split("-")[0])
-    send_mail(
-        'Код подтверждения',
-        (f'Код подтверждения для пользователя "{user[0].username}":'
-         f' {user[0].confirmation_code}'),
-        EMAIL_YAMDB,
-        [user[0].email]
     )
 
 
