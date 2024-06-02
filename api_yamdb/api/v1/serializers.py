@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import ValidationError
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -22,7 +23,7 @@ class CategorySerializer(SlugNameSerializer):
 
     class Meta:
         model = Category
-        fields = ('name', 'slug')
+        exclude = ('id',)
 
 
 class GenreSerializer(SlugNameSerializer):
@@ -30,7 +31,7 @@ class GenreSerializer(SlugNameSerializer):
 
     class Meta:
         model = Genre
-        fields = ('name', 'slug')
+        exclude = ('id',)
 
 
 class TitleGETSerializer(serializers.ModelSerializer):
@@ -67,7 +68,14 @@ class TitleSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category'
+        )
         model = Title
 
     def display(self, instance):
@@ -111,7 +119,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'author', 'pub_date')
+        exclude = ('review',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -136,39 +144,39 @@ class UserSerializer(serializers.ModelSerializer):
             'url': {'lookup_field': 'username'}
         }
 
-    def validate(self, data):
-        if data in 'me':
-            raise serializers.ValidationError(
-                {"username": ["Использовать имя me запрещено!"]}
-            )
-        return data
-
 
 class SignUpSerializer(serializers.ModelSerializer):
     """
     Сериализатор полей username и email
-    для класса User с валидацией
+    для класса User с валидацией.
     """
+
     class Meta:
         model = User
         fields = ('username', 'email')
 
-    def validate(self, data):
-        if self.initial_data.get('username') == 'me':
-            raise serializers.ValidationError(
-                {"username": ["This username is not awailable"]}
-            )
-        return data
+    def create(self, validated_data):
+        username = validated_data['username']
+        email = validated_data['email']
+        user_by_username = User.objects.filter(username=username).first()
+        user_by_email = User.objects.filter(email=email).first()
+        if not any((user_by_username, user_by_email)):
+            return User.objects.create(**validated_data)
+        if user_by_username == user_by_email:
+            return user_by_username
+        response = {}
+        if user_by_username:
+            response['username'] = ['Уже занято']
+        if user_by_email:
+            response['email'] = ['Уже занято']
+        raise ValidationError(response)
 
 
 class GetTokenSerializer(serializers.Serializer):
     """
     Сериализатор полей username и confirmation_code
-    для класса User с валидацией
+    для класса User с валидацией.
     """
-    username = serializers.SlugField(required=True)
-    confirmation_code = serializers.SlugField(required=True)
 
-    class Meta:
-        model = User
-        fields = ('username', 'confirmation_code')
+    username = serializers.CharField()
+    confirmation_code = serializers.CharField()
