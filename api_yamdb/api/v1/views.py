@@ -140,25 +140,46 @@ class UserViewSet(mixins.ListModelMixin,
 
     @action(
         detail=False,
-        url_path='me',
-        methods=['GET', 'PATCH'],
-        permission_classes=[IsAuthenticated]
+        methods=('get', 'patch', 'delete'),
+        url_path=r'(?P<username>[\w.@+-]+)',
+        url_name='get_user'
     )
-    def get_user_selfpage(self, request):
+    def get_user_selfpage(self, request, username):
         """Обеспечивает получание данных пользователя по его username и
         управление ими."""
 
-        if request.method == 'GET':
-            serializer = UserSerializer(request.user)
-            return Response(
-                serializer.data,
-                status=status.HTTP_200_OK)
-        serializer = UserSerializer(
-            request.user,
-            data=request.data,
-            partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(role=request.user.role, partial=True)
+        user = get_object_or_404(User, username=username)
+        if request.method == 'PATCH':
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        elif request.method == 'DELETE':
+            user.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=False,
+        methods=('get', 'patch'),
+        url_path='me',
+        url_name='me',
+        permission_classes=(IsAuthenticated,)
+    )
+    def get_me_data(self, request):
+        """Позволяет пользователю получить подробную информацию о себе
+        и редактировать её."""
+
+        if request.method == 'PATCH':
+            serializer = UserSerializer(
+                request.user, data=request.data,
+                partial=True, context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save(role=request.user.role)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
