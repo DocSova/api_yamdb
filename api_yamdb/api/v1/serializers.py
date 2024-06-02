@@ -10,15 +10,7 @@ from reviews.models import Category, Comment, Genre, Review, Title
 User = get_user_model()
 
 
-class SlugNameSerializer(serializers.ModelSerializer):
-    """Сериализатор слагов."""
-
-    class Meta:
-        abstract = True
-        fields = ('slug', 'name')
-
-
-class CategorySerializer(SlugNameSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категорий."""
 
     class Meta:
@@ -26,7 +18,7 @@ class CategorySerializer(SlugNameSerializer):
         exclude = ('id',)
 
 
-class GenreSerializer(SlugNameSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор жанров."""
 
     class Meta:
@@ -91,21 +83,20 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = ('id', 'text', 'author', 'score', 'pub_date')
+        exclude = ('title',)
         model = Review
 
         def validate(self, data):
             """Запрещает пользователям оставлять повторные отзывы."""
 
-            if not self.context.get('request').method == 'POST':
-                return data
-            author = self.context.get('request').user
-            title_id = self.context.get('view').kwargs.get('title_id')
-            title = get_object_or_404(Title, pk=title_id)
-            if Review.objects.filter(title=title, author=author).exists():
-                raise serializers.ValidationError(
-                    'Вы уже оставили отзыв на данное произведение!'
-                )
+            request = self.context.get('request')
+            if request.method == 'POST':
+                title_id = self.context.get('view').kwargs.get('title_id')
+                title = get_object_or_404(Title, pk=title_id)
+                if title.reviews.filter(author=request.user).exists():
+                    raise serializers.ValidationError(
+                        'Вы уже оставили отзыв на данное произведение!'
+                    )
             return data
 
 
