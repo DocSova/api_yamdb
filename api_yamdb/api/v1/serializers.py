@@ -144,6 +144,14 @@ class UserSerializer(serializers.ModelSerializer):
             'url': {'lookup_field': 'username'}
         }
 
+    def validate(self, data):
+        """Проверяет наличие всех необходимых полей."""
+        required_fields = ['username', 'email', 'first_name', 'last_name']
+        for field in required_fields:
+            if field not in data:
+                raise serializers.ValidationError({field: 'Это поле обязательно.'})
+        return data
+
 
 class SignUpSerializer(serializers.ModelSerializer):
     """
