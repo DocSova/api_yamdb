@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers
 from rest_framework.validators import ValidationError
 
@@ -9,6 +10,8 @@ from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
+USERNAME_MAX_LENGTH = 150
+EMAIL_MAX_LENGTH = 254
 
 class SlugNameSerializer(serializers.ModelSerializer):
     """Сериализатор слагов."""
@@ -125,9 +128,10 @@ class CommentSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для класса User с валидацией."""
 
-    role = serializers.StringRelatedField(read_only=True)
-    username = serializers.SlugField(read_only=True)
-    email = serializers.SlugField(read_only=True)
+    username = serializers.CharField(
+        max_length=USERNAME_MAX_LENGTH, required=True
+    )
+    email = serializers.EmailField(max_length=EMAIL_MAX_LENGTH, required=True)
 
     class Meta:
         model = User
@@ -144,13 +148,31 @@ class UserSerializer(serializers.ModelSerializer):
             'url': {'lookup_field': 'username'}
         }
 
-    def validate(self, data):
-        """Проверяет наличие всех необходимых полей."""
-        required_fields = ['username', 'email', 'first_name', 'last_name']
-        for field in required_fields:
-            if field not in data:
-                raise serializers.ValidationError({field: 'Это поле обязательно.'})
-        return data
+    def validate_email(self, email):
+        if not email:
+            raise serializers.ValidationError(
+                {'email': ['Неверные учетные данные.']}
+            )
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                {'email': ['Пользователь с таким email уже существует.']}
+            )
+        return email
+
+    def validate_username(self, username):
+        if not username:
+            raise serializers.ValidationError(
+                {'username': ['Неверные учетные данные.']}
+            )
+        if not re.match(r'^[\w.@+-]+\Z', username):
+            raise serializers.ValidationError(
+                {'username': ['Недопустимое значение']}
+            )
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError(
+                {'username': ['Пользователь с таким username уже существует.']}
+            )
+        return username
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -164,20 +186,11 @@ class SignUpSerializer(serializers.ModelSerializer):
         fields = ('username', 'email')
 
     def create(self, validated_data):
-        username = validated_data['username']
-        email = validated_data['email']
-        user_by_username = User.objects.filter(username=username).first()
-        user_by_email = User.objects.filter(email=email).first()
-        if not any((user_by_username, user_by_email)):
-            return User.objects.create(**validated_data)
-        if user_by_username == user_by_email:
-            return user_by_username
-        response = {}
-        if user_by_username:
-            response['username'] = ['Уже занято']
-        if user_by_email:
-            response['email'] = ['Уже занято']
-        raise ValidationError(response)
+        user, _ = User.objects.get_or_create(
+            username=validated_data['username'],
+            email=validated_data['email']
+        )
+        return user
 
 
 class GetTokenSerializer(serializers.Serializer):
