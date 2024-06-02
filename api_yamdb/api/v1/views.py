@@ -26,7 +26,6 @@ from .serializers import (
 from .permissions import (
     IsAdminOrReadOnly,
     IsAdmin,
-    IsAuthorModeratorAdminOrReadOnly,
     IsStaffOrAuthorOrReadOnly
 )
 from .utils import get_and_send_confirmation_code
@@ -202,7 +201,10 @@ def token(request):
 
 @api_view(['POST'])
 def signup(request):
-    user = User.objects.filter(**request.data)
+    user = User.objects.filter(
+        username=request.data.get('username'),
+        email=request.data.get('email')
+    )
     if user.exists():
         get_and_send_confirmation_code(user)
         return Response(request.data, status=status.HTTP_200_OK)
@@ -210,6 +212,9 @@ def signup(request):
     serializer = SignUpSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         serializer.save()
-        user = User.objects.filter(**serializer.data)
+        user = User.objects.filter(
+            username=serializer.data.get('username'),
+            email=serializer.data.get('email')
+        )
         get_and_send_confirmation_code(user)
     return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,17 +1,15 @@
 import re
 from rest_framework import serializers
-from rest_framework.validators import ValidationError
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 
 from users.models import User
 from reviews.models import Category, Comment, Genre, Review, Title
+from api_yamdb.settings import USERNAME_MAX_LENGTH, EMAIL_MAX_LENGTH
 
 User = get_user_model()
 
-USERNAME_MAX_LENGTH = 150
-EMAIL_MAX_LENGTH = 254
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категорий."""
@@ -89,18 +87,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         exclude = ('title',)
         model = Review
 
-        def validate(self, data):
-            """Запрещает пользователям оставлять повторные отзывы."""
+    def validate(self, data):
+        """Запрещает пользователям оставлять повторные отзывы."""
 
-            request = self.context.get('request')
-            if request.method == 'POST':
-                title_id = self.context.get('view').kwargs.get('title_id')
-                title = get_object_or_404(Title, pk=title_id)
-                if title.reviews.filter(author=request.user).exists():
-                    raise serializers.ValidationError(
-                        'Вы уже оставили отзыв на данное произведение!'
-                    )
-            return data
+        request = self.context.get('request')
+        if request.method == 'POST':
+            title = get_object_or_404(
+                Title,
+                pk=self.context.get('view').kwargs.get('title_id')
+            )
+            if title.reviews.filter(author=request.user).exists():
+                raise serializers.ValidationError(
+                    'Вы уже оставили отзыв на данное произведение!'
+                )
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
