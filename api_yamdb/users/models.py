@@ -18,7 +18,7 @@ class User(AbstractUser):
         db_index=True,
         validators=[
             RegexValidator(
-                regex=r'^[\w.@+-]+$',
+                regex=r'^[\w.@+-]+\Z',
                 message='Имя пользователя содержит недопустимый символ'
             ),
             validate_username_not_me,
@@ -48,6 +48,10 @@ class User(AbstractUser):
         max_length=20,
         choices=UserRoles.choices(),
         default=UserRoles.user.name
+    )
+    confirmation_code = models.SlugField(
+        null=True,
+        blank=True
     )
 
     class Meta:

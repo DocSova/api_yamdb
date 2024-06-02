@@ -143,7 +143,11 @@ class UserViewSet(mixins.ListModelMixin,
         methods=('get', 'patch', 'delete'),
         url_path=r'(?P<username>[\w.@+-]+)',
         url_name='get_user'
+        methods=('get', 'patch', 'delete'),
+        url_path=r'(?P<username>[\w.@+-]+)',
+        url_name='get_user'
     )
+    def get_user_selfpage(self, request, username):
     def get_user_selfpage(self, request, username):
         """Обеспечивает получание данных пользователя по его username и
         управление ими."""
