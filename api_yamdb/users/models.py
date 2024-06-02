@@ -5,6 +5,7 @@ from django.db import models
 from api_yamdb.settings import LENGTH_TEXT
 
 from .enums import UserRoles
+from .validators import validate_username_not_me
 
 
 class User(AbstractUser):
@@ -15,10 +16,13 @@ class User(AbstractUser):
         max_length=150,
         unique=True,
         db_index=True,
-        validators=[RegexValidator(
-            regex=r'^[\w.@+-]+$',
-            message='Имя пользователя содержит недопустимый символ'
-        )]
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+$',
+                message='Имя пользователя содержит недопустимый символ'
+            ),
+            validate_username_not_me,
+        ],
     )
     email = models.EmailField(
         'E-mail',

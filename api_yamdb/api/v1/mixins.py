@@ -1,6 +1,6 @@
 from rest_framework import filters, mixins, viewsets
 from rest_framework.pagination import LimitOffsetPagination
-from .permissions import IsAdmin
+from .permissions import IsAdminOrReadOnly
 
 
 class SlugNameViewSet(
@@ -9,8 +9,9 @@ class SlugNameViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAdminOrReadOnly, )
     pagination_class = LimitOffsetPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('=slug', 'name')
+    search_fields = ('=name')
+    max_search_results = 10
