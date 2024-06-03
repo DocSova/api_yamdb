@@ -1,32 +1,24 @@
-from rest_framework import permissions
-from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.permissions import (
+    SAFE_METHODS,
+    BasePermission,
+    IsAuthenticatedOrReadOnly
+)
 
 
-class IsAdmin(permissions.BasePermission):
-    """
-    Предоставляет право на запросы только
-    админу и суперюзеру.
-    """
+class IsAdmin(BasePermission):
+    """Предоставление прав админу и суперюзеру."""
 
     def has_permission(self, request, view):
         return request.user.is_authenticated and (
             request.user.is_admin
             or request.user.is_staff
-            or request.user.is_superuser
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return request.user.is_authenticated and (
-            request.user.is_admin
-            or request.user.is_staff
-            or request.user.is_superuser
         )
 
 
-class ReadOnly(permissions.BasePermission):
+class ReadOnly(BasePermission):
     """Ограничивает анонима правом на безопасные запросы."""
     def has_permission(self, request, view):
-        return request.method in permissions.SAFE_METHODS
+        return request.method in SAFE_METHODS
 
 
 class IsAdminOrReadOnly(BasePermission):
@@ -39,11 +31,8 @@ class IsAdminOrReadOnly(BasePermission):
         )
 
 
-class IsStaffOrAuthorOrReadOnly(BasePermission):
+class IsStaffOrAuthorOrReadOnly(IsAuthenticatedOrReadOnly):
     """Доступ разрешен только администратору, модератору или автору."""
-
-    def has_permission(self, request, view):
-        return request.method in SAFE_METHODS or request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
         return (

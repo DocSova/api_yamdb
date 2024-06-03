@@ -2,10 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-from api_yamdb.settings import LENGTH_TEXT
-
-from .enums import UserRoles
-from .validators import validate_username_not_me
+from api_yamdb.constants import LENGTH_TEXT, USERNAME_MAX_LENGTH
+from users.enums import UserRoles
+from users.validators import validate_username_not_me
 
 
 class User(AbstractUser):
@@ -13,7 +12,7 @@ class User(AbstractUser):
 
     username = models.CharField(
         'Имя пользователя',
-        max_length=150,
+        max_length=USERNAME_MAX_LENGTH,
         unique=True,
         db_index=True,
         validators=[
@@ -29,23 +28,13 @@ class User(AbstractUser):
         max_length=254,
         unique=True
     )
-    first_name = models.CharField(
-        'Имя',
-        max_length=150,
-        blank=True
-    )
-    last_name = models.CharField(
-        'Фамилия',
-        max_length=150,
-        blank=True
-    )
     bio = models.TextField(
         'Биография',
         blank=True
     )
     role = models.CharField(
         'Роль',
-        max_length=20,
+        max_length=UserRoles.longest_role(),
         choices=UserRoles.choices(),
         default=UserRoles.user.name
     )
@@ -57,7 +46,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ('id',)
+        ordering = ('username',)
 
     def __str__(self):
         return self.username[:LENGTH_TEXT]
@@ -69,7 +58,3 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         return self.role == UserRoles.moderator.name
-
-    @property
-    def is_user(self):
-        return self.role == UserRoles.user.name

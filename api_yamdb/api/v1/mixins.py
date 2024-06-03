@@ -1,10 +1,11 @@
 from rest_framework import filters, mixins
 from rest_framework.pagination import LimitOffsetPagination
 
-from .permissions import IsAdminOrReadOnly
+from api_yamdb.constants import MAX_SEARCH_RESULTS
+from api.v1.permissions import IsAdminOrReadOnly
 
 
-class ListCreateDestroyMixin(
+class ListCreateDestroyViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.DestroyModelMixin
@@ -14,4 +15,4 @@ class ListCreateDestroyMixin(
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter,)
     search_fields = ('=name',)
-    max_search_results = 10
+    max_search_results = MAX_SEARCH_RESULTS

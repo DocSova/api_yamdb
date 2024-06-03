@@ -1,70 +1,66 @@
-from datetime import datetime
-
 from django.contrib.auth import get_user_model
 from django.core.validators import (
     MaxValueValidator,
-    MinValueValidator,
-    RegexValidator
+    MinValueValidator
 )
 from django.db import models
 
-from api_yamdb.settings import LENGTH_TEXT
+from api_yamdb.constants import (
+    CATEGORY_NAME_LENGTH,
+    LENGTH_TEXT,
+    GENRE_NAME_LENGTH,
+    RATING_MAX,
+    RATING_MIN,
+    TITLE_NAME_LENGTH
+)
+from reviews.validators import validate_title_year
+
 
 User = get_user_model()
 
 
-class Category(models.Model):
-    """Класс категорий."""
-
-    name = models.CharField(
-        'Hазвание',
-        max_length=256,
-        db_index=True
-    )
+class CategoryGenreBaseModel(models.Model):
     slug = models.SlugField(
-        max_length=50,
         verbose_name='slug',
-        unique=True,
-        validators=[RegexValidator(
-            regex=r'^[-a-zA-Z0-9_]+$',
-            message='Слаг категории содержит недопустимый символ'
-        )]
+        unique=True
     )
 
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
         ordering = ('name',)
+        abstract = True
 
-    def __str__(self):
-        return self.name[:LENGTH_TEXT]
+        def __str__(self):
+            return self.name[:LENGTH_TEXT]
 
 
-class Genre(models.Model):
+class Category(CategoryGenreBaseModel):
+    """Класс категорий."""
+
+    name = models.CharField(
+        'Hазвание',
+        max_length=CATEGORY_NAME_LENGTH,
+        db_index=True
+    )
+
+    class Meta(CategoryGenreBaseModel.Meta):
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+
+
+class Genre(CategoryGenreBaseModel):
     """Класс жанров."""
 
     name = models.CharField(
         'Hазвание',
-        max_length=75,
+        max_length=GENRE_NAME_LENGTH,
         db_index=True
     )
-    slug = models.SlugField(
-        max_length=50,
-        verbose_name='slug',
-        unique=True,
-        validators=[RegexValidator(
-            regex=r'^[-a-zA-Z0-9_]+$',
-            message='Слаг жанра содержит недопустимый символ'
-        )]
-    )
 
-    class Meta:
+    class Meta(CategoryGenreBaseModel.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name[:LENGTH_TEXT]
 
 
 class Title(models.Model):
@@ -72,20 +68,13 @@ class Title(models.Model):
 
     name = models.CharField(
         'Hазвание',
-        max_length=150,
+        max_length=TITLE_NAME_LENGTH,
         db_index=True
     )
-    year = models.PositiveIntegerField(
+    year = models.SmallIntegerField(
         'Год выпуска',
         validators=[
-            MinValueValidator(
-                0,
-                message='Значение года не может быть отрицательным'
-            ),
-            MaxValueValidator(
-                int(datetime.now().year),
-                message='Значение года не может быть больше текущего'
-            )
+            validate_title_year
         ],
         db_index=True
     )
@@ -134,7 +123,7 @@ class GenreTitle(models.Model):
     class Meta:
         verbose_name = 'Соответствие жанра и произведения'
         verbose_name_plural = 'Таблица соответствия жанров и произведений'
-        ordering = ('id',)
+        ordering = ('genre',)
 
     def __str__(self):
         return f'{self.title} принадлежит жанру/ам {self.genre}'
@@ -152,16 +141,16 @@ class Review(models.Model):
         related_name='reviews',
         verbose_name='Aвтор'
     )
-    score = models.PositiveIntegerField(
+    score = models.PositiveSmallIntegerField(
         'Oценка',
         validators=[
             MinValueValidator(
-                1,
-                message='Введенная оценка ниже допустимой'
+                RATING_MIN,
+                message=f'Введенная оценка ниже {RATING_MIN}'
             ),
             MaxValueValidator(
-                10,
-                message='Введенная оценка выше допустимой'
+                RATING_MAX,
+                message=f'Введенная оценка выше {RATING_MAX}'
             ),
         ]
     )
@@ -189,8 +178,8 @@ class Review(models.Model):
             ),
         )
 
-    def __str__(self):
-        return self.text[:LENGTH_TEXT]
+        def __str__(self):
+            return self.text[:LENGTH_TEXT]
 
 
 class Comment(models.Model):
@@ -222,5 +211,5 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
         ordering = ('-pub_date',)
 
-    def __str__(self):
-        return self.text[:LENGTH_TEXT]
+        def __str__(self):
+            return self.text[:LENGTH_TEXT]

@@ -2,9 +2,9 @@ import csv
 import os
 
 from django.core.management import BaseCommand
+from django.conf import settings
 from django.db import IntegrityError
 
-from api_yamdb.settings import CSV_FILES_DIR
 from reviews.models import (
     Category,
     Comment,
@@ -33,16 +33,18 @@ FIELDS = {
     'review_id': ('review', Review),
 }
 
+print_console = BaseCommand().stdout.write
+
 
 def open_csv_file(file_name):
     """Менеджер контекста для открытия csv-файлов."""
     csv_file = file_name + '.csv'
-    csv_path = os.path.join(CSV_FILES_DIR, csv_file)
+    csv_path = os.path.join(settings.CSV_FILES_DIR, csv_file)
     try:
         with (open(csv_path, encoding='utf-8')) as file:
             return list(csv.reader(file))
     except FileNotFoundError:
-        print(f'Файл {csv_file} не найден.')
+        print_console(f'Файл {csv_file} не найден.')
         return
 
 
@@ -70,10 +72,10 @@ def load_csv(file_name, class_name):
             table = class_name(**data_csv)
             table.save()
         except (ValueError, IntegrityError) as error:
-            print(f'Ошибка в загружаемых данных. {error}. '
-                  f'{table_not_loaded}')
+            print_console(f'Ошибка в загружаемых данных. {error}. '
+                          f'{table_not_loaded}')
             break
-    print(table_loaded)
+    print_console(table_loaded)
 
 
 class Command(BaseCommand):
@@ -81,5 +83,5 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for key, value in FILES_CLASSES.items():
-            print(f'Загрузка таблицы {value.__qualname__}')
+            print_console(f'Загрузка таблицы {value.__qualname__}')
             load_csv(key, value)
