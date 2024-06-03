@@ -1,4 +1,4 @@
-from rest_framework import mixins, status, viewsets, filters
+from rest_framework import mixins, status, viewsets, filters, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -73,17 +73,23 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_title(self):
         """Возвращает объект текущего произведения."""
-
         return get_object_or_404(Title, pk=self.kwargs['title_id'])
 
     def perform_create(self, serializer):
         """Создает отзыв для текущего произведения,
         где автором является текущий пользователь."""
+        title = self.get_title()
+        author = self.request.user
 
-        serializer.save(
-            author=self.request.user,
-            title=self.get_title()
-        )
+        """Проверяем, существует ли уже обзыв от этого пользователя"""
+        if Review.objects.filter(title=title, author=author).exists():
+            raise serializers.ValidationError('Вы уже оставили обзор.')
+
+        serializer.save(author=author, title=title)
+
+    def get_queryset(self):
+        """Возвращает queryset с отзывами для текущего произведения."""
+        return self.get_title().reviews.all()
 
     def get_queryset(self):
         """Возвращает queryset c отзывами для текущего произведения."""
@@ -202,7 +208,7 @@ def token(request):
 
 @api_view(['POST'])
 def signup(request):
-    user = User.objects.filter(**request.data)
+    user = User.objects.filter(username=request.data.get('username'), email=request.data.get('email'))
     if user.exists():
         get_and_send_confirmation_code(user)
         return Response(request.data, status=status.HTTP_200_OK)
@@ -210,6 +216,6 @@ def signup(request):
     serializer = SignUpSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         serializer.save()
-        user = User.objects.filter(**serializer.data)
+        user = User.objects.filter(username=serializer.data.get('username'), email=serializer.data.get('email'))
         get_and_send_confirmation_code(user)
     return Response(serializer.data, status=status.HTTP_200_OK)
