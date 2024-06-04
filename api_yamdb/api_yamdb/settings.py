@@ -25,8 +25,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'users.apps.UsersConfig',
-    'api.apps.ApiConfig',
     'reviews.apps.ReviewsConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -110,10 +110,6 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static/'),)
 CSV_FILES_DIR = os.path.join(BASE_DIR, 'static/data')
 
 AUTH_USER_MODEL = 'users.User'
-LENGTH_TEXT = 15
-USERNAME_MAX_LENGTH = 150
-EMAIL_MAX_LENGTH = 254
-
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [

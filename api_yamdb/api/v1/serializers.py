@@ -1,12 +1,17 @@
 import re
-from rest_framework import serializers
 
+from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 
-from users.models import User
+from api_yamdb.constants import (
+    USERNAME_MAX_LENGTH,
+    EMAIL_MAX_LENGTH,
+    RATING_MIN
+)
 from reviews.models import Category, Comment, Genre, Review, Title
-from api_yamdb.settings import USERNAME_MAX_LENGTH, EMAIL_MAX_LENGTH
+from users.models import User
+
 
 User = get_user_model()
 
@@ -32,7 +37,7 @@ class TitleGETSerializer(serializers.ModelSerializer):
 
     genre = GenreSerializer(read_only=True, many=True)
     category = CategorySerializer(read_only=True)
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.IntegerField(read_only=True, default=RATING_MIN)
 
     class Meta:
         fields = (
@@ -53,7 +58,8 @@ class TitleSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(),
         slug_field='slug',
-        many=True
+        many=True,
+        allow_empty=False
     )
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
@@ -71,7 +77,7 @@ class TitleSerializer(serializers.ModelSerializer):
         )
         model = Title
 
-    def display(self, instance):
+    def to_representation(self, instance):
         return TitleGETSerializer(instance).data
 
 
@@ -126,7 +132,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        ordering = ['id']
         fields = (
             'username',
             'email',
