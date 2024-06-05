@@ -2,8 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from api_yamdb.constants import MAX_SEARCH_RESULTS
-
-from .models import User
+from users.models import User
 
 
 @admin.register(User)
