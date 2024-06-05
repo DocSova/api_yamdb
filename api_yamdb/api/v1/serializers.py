@@ -1,13 +1,13 @@
 import re
 
-from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 
 from api_yamdb.constants import (
     USERNAME_MAX_LENGTH,
     EMAIL_MAX_LENGTH,
-    RATING_MIN
+    RATING_DEFAULT
 )
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
@@ -37,7 +37,7 @@ class TitleGETSerializer(serializers.ModelSerializer):
 
     genre = GenreSerializer(read_only=True, many=True)
     category = CategorySerializer(read_only=True)
-    rating = serializers.IntegerField(read_only=True, default=RATING_MIN)
+    rating = serializers.IntegerField(read_only=True, default=RATING_DEFAULT)
 
     class Meta:
         fields = (
@@ -59,7 +59,8 @@ class TitleSerializer(serializers.ModelSerializer):
         queryset=Genre.objects.all(),
         slug_field='slug',
         many=True,
-        allow_empty=False
+        allow_empty=False,
+        allow_null=False
     )
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
@@ -95,7 +96,6 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Запрещает пользователям оставлять повторные отзывы."""
-
         request = self.context.get('request')
         if request.method == 'POST':
             title = get_object_or_404(
