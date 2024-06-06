@@ -39,7 +39,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_review(self):
         """Возвращает объект текущего отзыва."""
-
         return get_object_or_404(
             Review,
             pk=self.kwargs['review_id'],
@@ -48,13 +47,11 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Возвращает queryset c комментариями для текущего отзыва."""
-
         return self.get_review().comments.all()
 
     def perform_create(self, serializer):
         """Создает комментарий для текущего отзыва,
         где автором является текущий пользователь."""
-
         serializer.save(
             author=self.request.user,
             review=self.get_review()
@@ -70,13 +67,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_title(self):
         """Возвращает объект текущего произведения."""
-
         return get_object_or_404(Title, pk=self.kwargs['title_id'])
 
     def perform_create(self, serializer):
         """Создает отзыв для текущего произведения,
         где автором является текущий пользователь."""
-
         serializer.save(
             author=self.request.user,
             title=self.get_title()
@@ -84,7 +79,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Возвращает queryset c отзывами для текущего произведения."""
-
         return self.get_title().reviews.all()
 
 
@@ -108,17 +102,15 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
-    )
+    ).order_by('name')
     ordering_fields = ('name',)
-    ordering = ('username',)
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (filters.OrderingFilter, DjangoFilterBackend,)
     filterset_class = TitleGenreFilter
     permission_classes = (IsAdminOrReadOnly,)
 
     def get_serializer_class(self):
         """Определяет какой сериализатор будет использоваться
         для разных типов запроса."""
-
         if self.request.method in SAFE_METHODS:
             return TitleGETSerializer
         return TitleSerializer
@@ -145,7 +137,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_me_data(self, request):
         """Позволяет пользователю получить подробную информацию о себе
         и редактировать её."""
-
         if request.method == 'PATCH':
             serializer = UserSerializer(
                 request.user, data=request.data,

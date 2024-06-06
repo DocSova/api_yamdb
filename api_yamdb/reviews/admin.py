@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.db.models import Avg
 
-from api_yamdb.constants import MAX_SEARCH_RESULTS
+from api_yamdb.constants import MAX_SEARCH_RESULTS, RATING_DEFAULT
 from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 
 
@@ -14,7 +14,6 @@ class CategoryAdmin(admin.ModelAdmin):
         'name',
         'slug'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('name',)
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('name',)
@@ -30,7 +29,6 @@ class GenreAdmin(admin.ModelAdmin):
         'name',
         'slug'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('name',)
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('name',)
@@ -51,29 +49,27 @@ class TitleAdmin(admin.ModelAdmin):
         'count_reviews',
         'get_rating'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('name',)
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('name', 'year', 'category')
 
+    @admin.display(description='Жанр/ы произведения')
     def get_genre(self, object):
         """Получает жанр или список жанров произведения."""
         return '\n'.join((genre.name for genre in object.genre.all()))
 
-    get_genre.short_description = 'Жанр/ы произведения'
-
+    # @admin.display(short_description='Количество отзывов',)
     def count_reviews(self, object):
         """Вычисляет количество отзывов на произведение."""
+
         return object.reviews.count()
 
-    count_reviews.short_description = 'Количество отзывов'
-
+    # @admin.display(short_description='Рейтинг',)
     def get_rating(self, object):
         """Вычисляет рейтинг произведения."""
-        rating = object.reviews.aggregate(average_score=Avg('score'))
-        return round(rating.get('average_score'), 1)
 
-    get_rating.short_description = 'Рейтинг'
+        rating = object.reviews.aggregate(average_score=Avg('score'))
+        return round(rating.get('average_score'), RATING_DEFAULT)
 
 
 @admin.register(GenreTitle)
@@ -85,7 +81,6 @@ class GenreTitleAdmin(admin.ModelAdmin):
         'genre',
         'title'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('genre',)
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('title',)
@@ -103,7 +98,6 @@ class ReviewAdmin(admin.ModelAdmin):
         'pub_date',
         'title'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('author', 'score', 'pub_date')
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('author',)
@@ -120,7 +114,6 @@ class CommentAdmin(admin.ModelAdmin):
         'pub_date',
         'review'
     )
-    empty_value_display = 'значение отсутствует'
     list_filter = ('author', 'pub_date')
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('author',)
@@ -128,3 +121,4 @@ class CommentAdmin(admin.ModelAdmin):
 
 admin.site.site_title = 'Администрирование YaMDb'
 admin.site.site_header = 'Администрирование YaMDb'
+admin.site.empty_value_display = 'значение отсутствует'

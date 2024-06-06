@@ -1,12 +1,12 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from api_yamdb.constants import MAX_SEARCH_RESULTS
-
-from .models import User
+from users.models import User
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     """Класс настройки раздела пользователей."""
 
     list_display = (
@@ -23,3 +23,6 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = ('username',)
     list_per_page = MAX_SEARCH_RESULTS
     search_fields = ('username', 'role')
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Extra Fields', {'fields': ('bio', 'role',)}),
+    )

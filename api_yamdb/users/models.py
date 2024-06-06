@@ -2,7 +2,11 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-from api_yamdb.constants import LENGTH_TEXT, USERNAME_MAX_LENGTH
+from api_yamdb.constants import (
+    LENGTH_TEXT,
+    USERNAME_MAX_LENGTH,
+    EMAIL_MAX_LENGTH
+)
 from users.enums import UserRoles
 from users.validators import validate_username_not_me
 
@@ -25,7 +29,7 @@ class User(AbstractUser):
     )
     email = models.EmailField(
         'E-mail',
-        max_length=254,
+        max_length=EMAIL_MAX_LENGTH,
         unique=True
     )
     bio = models.TextField(
@@ -53,7 +57,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == UserRoles.admin.name
+        return self.role == UserRoles.admin.name or self.is_staff
 
     @property
     def is_moderator(self):
