@@ -14,13 +14,6 @@ class IsAdmin(BasePermission):
         )
 
 
-class ReadOnly(BasePermission):
-    """Ограничивает анонима правом на безопасные запросы."""
-
-    def has_permission(self, request, view):
-        return request.method in SAFE_METHODS
-
-
 class IsAdminOrReadOnly(BasePermission):
     """Доступ разрешен только администратору."""
 

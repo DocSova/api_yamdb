@@ -42,6 +42,11 @@ class CategoryGenreBaseModel(models.Model):
 class ReviewCommenBaseModel(models.Model):
     """Родительский класс моделей Отзыв и Комментарий."""
 
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Aвтор'
+    )
     text = models.TextField(
         'Текст'
     )
@@ -144,12 +149,6 @@ class GenreTitle(models.Model):
 class Review(ReviewCommenBaseModel):
     """Класс отзывов."""
 
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='reviews',
-        verbose_name='Aвтор'
-    )
     score = models.PositiveSmallIntegerField(
         'Oценка',
         validators=[
@@ -180,17 +179,12 @@ class Review(ReviewCommenBaseModel):
                 name='unique_author_title'
             ),
         )
+        default_related_name = 'reviews'
 
 
 class Comment(ReviewCommenBaseModel):
     """Класс комментариев."""
 
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='comments',
-        verbose_name='Aвтор'
-    )
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
@@ -201,3 +195,4 @@ class Comment(ReviewCommenBaseModel):
     class Meta(ReviewCommenBaseModel.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
