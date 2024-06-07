@@ -58,13 +58,13 @@ class TitleAdmin(admin.ModelAdmin):
         """Получает жанр или список жанров произведения."""
         return '\n'.join((genre.name for genre in object.genre.all()))
 
-    # @admin.display(short_description='Количество отзывов',)
+    @admin.display(description='Количество отзывов')
     def count_reviews(self, object):
         """Вычисляет количество отзывов на произведение."""
 
         return object.reviews.count()
 
-    # @admin.display(short_description='Рейтинг',)
+    @admin.display(description='Рейтинг')
     def get_rating(self, object):
         """Вычисляет рейтинг произведения."""
 
@@ -100,7 +100,7 @@ class ReviewAdmin(admin.ModelAdmin):
     )
     list_filter = ('author', 'score', 'pub_date')
     list_per_page = MAX_SEARCH_RESULTS
-    search_fields = ('author',)
+    search_fields = ('author__username',)
 
 
 @admin.register(Comment)
@@ -116,7 +116,7 @@ class CommentAdmin(admin.ModelAdmin):
     )
     list_filter = ('author', 'pub_date')
     list_per_page = MAX_SEARCH_RESULTS
-    search_fields = ('author',)
+    search_fields = ('author__username',)
 
 
 admin.site.site_title = 'Администрирование YaMDb'
